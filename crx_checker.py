@@ -104,15 +104,15 @@ banner = """
 print(f"{banner}\nNOTE: Please only upload zip files for downloaded extensions and not any data containing company confidential information.")
 
 # reading api key
-key_file = open("VT API Key.txt", "r")
+key_file = open("<location to VT API key here>", "r")
 api_key = key_file.readline()
 key_file.close()
 
 #VT scanner vars
 vt_crx = input("Enter the name of zipped crx: ")
-crx_dir = "D:\\Pentest\\crx_checker\\zips"
+crx_dir = "<location to download crx/zip here>"
 unzip_crx = vt_crx.replace(".zip","")
-unzip_crx_dir = "D:\\Pentest\\crx_checker\\unzipped_crxs"
+unzip_crx_dir = "<location to unzip crx/zip here>"
 upload_file = os.path.join(crx_dir,vt_crx)
 retire_scan_file = os.path.join(unzip_crx_dir, unzip_crx)
 
@@ -133,4 +133,4 @@ print("\nRunning Retire scan:")
 subprocess.run(f"retire --path {retire_scan_file}", shell=True)
 
 # use below line if in corporate environment
-# subprocess.run(f"retire --jsrepo C:\\Users\\A0831400\\Downloads\\retire\\jsrepository-v4.json --path {retire_scan_file}", shell=True)
+# subprocess.run(f"retire --jsrepo <location to jsrepo if stuck behind corporate proxy n retire cannot fetch> --path {retire_scan_file}", shell=True)
