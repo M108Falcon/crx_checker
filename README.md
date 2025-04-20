@@ -22,8 +22,11 @@ Uploads the downloaded zip file for the browser extension to be assessed to VT v
 ## Environment setup:
 - Create python virtual environment.`python -m venv <name of your virtualenv>`
 - Install the dependencies via give requirements file. `pip install -r <paths to requirements txt>`
-- Install retire. `npm install retire`
-- Add locations to relevant dirs and VirusTotal API key file before running the script
+- Install retire. `npm install -g retire`
+- Edit code to add locations to relevant dirs and VirusTotal API key file before running the tool (use absolute paths).
+    - Line:107 VT API key file.
+    - Line:113 location to downloaded crx/zip file of extension.
+    - Line: 115 location to unzip the donwloaded files.
 
 ## Roadmap
 - [ ] Support for firefox addons.
