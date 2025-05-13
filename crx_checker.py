@@ -1,6 +1,6 @@
 # -------------------------------------
 # Interpreter: Python
-# Version: 20241119.4
+# Version: 20250514.1
 # Function: Assess browser extensions for malware, risks and sbom vulnerabilities
 # Output: stdout
 # Created by M108Falcon
