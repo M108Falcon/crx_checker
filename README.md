@@ -9,26 +9,26 @@ Uploads the downloaded zip file for the browser extension to be assessed to VT v
 
 ## Features
 - Support for big files (upto 650mb) altho extensions aren't that large but just in case.
-- Can perform analysis for Edge extensions as well.
+- Fully automated analysis, just provide guid for the extension.
 
 ## Prequisites:
-- CRX Extractor/Downloader Extension for [google chrome/brave](https://chromewebstore.google.com/search/CRX%20Extractor%2FDownloader)
 - 7zip (added to PATH)
 - VirusTotal API key
 - Python 3
 - Nodejs
 - retire
+- OPTIONAL: CRX Extractor/Downloader Extension for [google chrome/brave](https://chromewebstore.google.com/search/CRX%20Extractor%2FDownloader)
 
 ## Environment setup:
 - Create python virtual environment.`python -m venv <name of your virtualenv>`
 - Install the dependencies via give requirements file. `pip install -r <paths to requirements txt>`
 - Install retire. `npm install -g retire`
 - Edit code to add locations to relevant dirs and VirusTotal API key file before running the tool (use absolute paths).
-    - Line:107 VT API key file.
-    - Line:113 location to downloaded crx/zip file of extension.
-    - Line: 115 location to unzip the donwloaded files.
+    - Line:115 VT API key file.
+    - Line:127 location to downloaded crx/zip file of extension.
+    - Line: 128 location to unzip the donwloaded files.
 
 ## Roadmap
+- [x] Full automation i.e just provide URL to extension and rest is done automatically.
 - [ ] Support for firefox addons.
-- [ ] Full automation i.e just provide URL to extension and rest is done automatically.
 - [ ] (OPTIONAL) Web based GUI.

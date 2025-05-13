@@ -7,10 +7,18 @@
 # -------------------------------------
 
 import os
-import requests
 from urllib.parse import quote # url encode
 import subprocess
 import json
+import re
+import time
+import requests
+
+# regex pattern(s)
+# match title tag
+PATTERN_TAG = re.compile(r"<title>(.*?)</title>")
+# match dangerous chars
+PATTERN_DANGER_CHAR = re.compile(r"/|\s|\.|\*|\?|\||\[|\]|\{|\}|\(|\)|\&|\!|;")
 
 # check file size
 def file_size(file_path):
@@ -101,20 +109,71 @@ banner = """
                                                             
 """
 
-print(f"{banner}\nNOTE: Please only upload zip files for downloaded extensions and not any data containing company confidential information.")
+print(f"{banner}\nNOTE: This tool only accepts guids from Chrome and Edge extension webstores.")
 
 # reading api key
-key_file = open("<location to VT API key here>", "r")
+key_file = open("VT API Key.txt", "r")
 api_key = key_file.readline()
 key_file.close()
 
-#VT scanner vars
-vt_crx = input("Enter the name of zipped crx: ")
-crx_dir = "<location to download crx/zip here>"
-unzip_crx = vt_crx.replace(".zip","")
-unzip_crx_dir = "<location to unzip crx/zip here>"
+# automated process via guids
+# working vars
+crx_url = ""
+crx_page_url = ""
+chrome_crx_url = "https://clients2.google.com/service/update2/crx?response=redirect&prodversion=136.0.7103.49&acceptformat=crx2,crx3&x=id%3D{extensionid}%26uc"
+chrome_crx_page_url = "https://chromewebstore.google.com/detail/{extensionid}"
+edge_crx_url = "https://edge.microsoft.com/extensionwebstorebase/v1/crx?response=redirect&x=id%3D{extensionid}%26installsource%3Dondemand%26uc"
+edge_crx_page_url = "https://microsoftedge.microsoft.com/addons/detail/{extensionid}"
+crx_dir = "D:\\Pentest\\crx_checker\\zips"
+unzip_crx_dir = "D:\\Pentest\\crx_checker\\unzipped_crxs"
+
+# user input
+browser_choice = int(input("Select browser [Chrome(0) | Edge(1)]: "))
+crx_guid = input("Enter crx guid: ")
+
+# guid format checks
+if len(crx_guid)!=32 or str.isalpha(crx_guid) == False:
+    print("please check your guid - ERR: invalid length/digits found")
+    exit()
+
+# choose browser to download crx file for + inititalize appropriate vars
+# format helps put dyanmic values in placeholder{} declared in working vars
+if browser_choice == 0: 
+    crx_url = chrome_crx_url.format(extensionid=crx_guid)
+    crx_page_url = chrome_crx_page_url.format(extensionid=crx_guid)
+elif browser_choice == 1: 
+    crx_url = edge_crx_url.format(extensionid=crx_guid)
+    crx_page_url = edge_crx_page_url.format(extensionid=crx_guid)
+else:
+    print("Please select compatible browser")
+
+# check if crx is present in webstore
+crx_file_req = requests.get(crx_url, allow_redirects=True)
+if (crx_file_req.status_code == 404):
+    print("No such extenxtion exist on webstore")
+    exit()
+
+# find crx name from webstore page + initialize name for file to be stored on disk
+# extarct page content as text to run regex filter(s)
+crx_page_content = requests.get(crx_page_url,allow_redirects=True).text
+# group(1) only matches the text, leaves out tags 
+match = PATTERN_TAG.search(crx_page_content)
+# eliminate dangerous characters n whitespaces
+safe_match = re.sub(PATTERN_DANGER_CHAR,"-",match.group(1))
+#strftime to provide timestamp
+vt_crx = crx_guid + "_" + safe_match + "_" + time.strftime("%Y%m%d-%H%M%S") + ".crx"
+
 upload_file = os.path.join(crx_dir,vt_crx)
+unzip_crx = vt_crx.replace(".crx","")
 retire_scan_file = os.path.join(unzip_crx_dir, unzip_crx)
+
+# write request content in raw bytes to create crx on disk
+with open(upload_file, 'wb') as file:
+    file.write(crx_file_req.content)
+
+# free up memory
+del crx_page_content
+del crx_file_req
 
 # malware scan
 vt_result = vt_scan(upload_file, api_key)["data"]["attributes"]["stats"]
@@ -131,6 +190,4 @@ permission_checker(retire_scan_file)
 #retire scan
 print("\nRunning Retire scan:")
 subprocess.run(f"retire --path {retire_scan_file}", shell=True)
-
-# use below line if in corporate environment
-# subprocess.run(f"retire --jsrepo <location to jsrepo if stuck behind corporate proxy n retire cannot fetch> --path {retire_scan_file}", shell=True)
+# subprocess.run(f"retire --jsrepo C:\\Users\\A0831400\\Downloads\\retire\\jsrepository-v4.json --path {retire_scan_file}", shell=True)
