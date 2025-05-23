@@ -1,6 +1,6 @@
 # -------------------------------------
 # Interpreter: Python
-# Version: 20250514.1
+# Version: 202505.2
 # Function: Assess browser extensions for malware, risks and sbom vulnerabilities
 # Output: stdout
 # Created by M108Falcon
@@ -18,7 +18,7 @@ import requests
 # match title tag
 PATTERN_TAG = re.compile(r"<title>(.*?)</title>")
 # match dangerous chars
-PATTERN_DANGER_CHAR = re.compile(r"/|\s|\.|\*|\?|\||\[|\]|\{|\}|\(|\)|\&|\!|;")
+PATTERN_DANGER_CHAR = re.compile(r"[\/\s\.\*\?\\[\]\{\}\(\)\&\!;:\xa0\x200B]")
 
 # check file size
 def file_size(file_path):
@@ -127,9 +127,10 @@ edge_crx_page_url = "https://microsoftedge.microsoft.com/addons/detail/{extensio
 crx_dir = "D:\\Pentest\\crx_checker\\zips"
 unzip_crx_dir = "D:\\Pentest\\crx_checker\\unzipped_crxs"
 
-# user input
+# sanitized user input
 browser_choice = int(input("Select browser [Chrome(0) | Edge(1)]: "))
 crx_guid = input("Enter crx guid: ")
+crx_guid = re.sub(PATTERN_DANGER_CHAR,"",crx_guid)
 
 # guid format checks
 if len(crx_guid)!=32 or str.isalpha(crx_guid) == False:
@@ -147,6 +148,7 @@ elif browser_choice == 1:
 else:
     print("Please select compatible browser")
 
+print("Checking for extension in webstore....")
 # check if crx is present in webstore
 crx_file_req = requests.get(crx_url, allow_redirects=True)
 if (crx_file_req.status_code == 404):
@@ -162,6 +164,8 @@ match = PATTERN_TAG.search(crx_page_content)
 safe_match = re.sub(PATTERN_DANGER_CHAR,"-",match.group(1))
 #strftime to provide timestamp
 vt_crx = crx_guid + "_" + safe_match + "_" + time.strftime("%Y%m%d-%H%M%S") + ".crx"
+
+print(f"Extension Found: {safe_match}\nStarting Analysis")
 
 upload_file = os.path.join(crx_dir,vt_crx)
 unzip_crx = vt_crx.replace(".crx","")
