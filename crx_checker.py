@@ -20,6 +20,68 @@ PATTERN_TAG = re.compile(r"<title>(.*?)</title>")
 # match dangerous chars
 PATTERN_DANGER_CHAR = re.compile(r"[\/\s\.\*\?\\[\]\{\}\(\)\&\!;:\xa0\x200B]")
 
+# automated process via guids
+def crx_downloader(browser_choice=2, crx_guid="", title_pattern=PATTERN_TAG, sanitizer_pattern=PATTERN_DANGER_CHAR):
+    # working vars
+    crx_dir = "D:\\Pentest\\crx_checker\\zips"
+    unzip_crx_dir = "D:\\Pentest\\crx_checker\\unzipped_crxs"
+    crx_url = ""
+    crx_page_url = ""
+    chrome_crx_url = "https://clients2.google.com/service/update2/crx?response=redirect&prodversion=136.0.7103.49&acceptformat=crx2,crx3&x=id%3D{extensionid}%26uc"
+    chrome_crx_page_url = "https://chromewebstore.google.com/detail/{extensionid}"
+    edge_crx_url = "https://edge.microsoft.com/extensionwebstorebase/v1/crx?response=redirect&x=id%3D{extensionid}%26installsource%3Dondemand%26uc"
+    edge_crx_page_url = "https://microsoftedge.microsoft.com/addons/detail/{extensionid}"
+
+    # guid format checks
+    if len(crx_guid)!=32 or str.isalpha(crx_guid) == False:
+        print("please check your guid - ERR: invalid length/digits found")
+        exit()
+    
+    # choose browser to download crx file for + inititalize appropriate vars
+    # format helps put dyanmic values in placeholder{} declared in working vars
+    if browser_choice == 0: 
+        crx_url = chrome_crx_url.format(extensionid=crx_guid)
+        crx_page_url = chrome_crx_page_url.format(extensionid=crx_guid)
+    elif browser_choice == 1: 
+        crx_url = edge_crx_url.format(extensionid=crx_guid)
+        crx_page_url = edge_crx_page_url.format(extensionid=crx_guid)
+    else:
+        print("Please select compatible browser")
+        exit()
+    
+    print("Checking for extension in webstore....")
+    # check if crx is present in webstore
+    crx_file_req = requests.get(crx_url, allow_redirects=True)
+    if (crx_file_req.status_code == 404):
+        print("No such extenxtion exist on webstore")
+        exit()
+
+    # find crx name from webstore page + initialize name for file to be stored on disk
+    # extarct page content as text to run regex filter(s)
+    crx_page_content = requests.get(crx_page_url,allow_redirects=True).text
+    # group(1) only matches the text, leaves out tags 
+    match = title_pattern.search(crx_page_content)
+    # eliminate dangerous characters n whitespaces
+    safe_match = re.sub(sanitizer_pattern,"-",match.group(1))
+    print(f"Extension Found: {safe_match}\nStarting Analysis")
+
+    #strftime to provide timestamp
+    crx_file = crx_guid + "_" + safe_match + "_" + time.strftime("%Y%m%d-%H%M%S") + ".crx"
+
+    upload_file = os.path.join(crx_dir,crx_file)
+    unzip_crx_file = crx_file.replace(".crx","")
+    retire_scan_file = os.path.join(unzip_crx_dir, unzip_crx_file)
+
+    # write request content in raw bytes to create crx on disk
+    with open(upload_file, 'wb') as file:
+        file.write(crx_file_req.content)
+
+    # free up memory
+    del crx_page_content
+    del crx_file_req
+
+    return upload_file, unzip_crx_file, retire_scan_file
+
 # check file size
 def file_size(file_path):
     if os.path.isfile(file_path):
@@ -39,7 +101,6 @@ def permission_checker(retire_scan_file):
   # load data from manifest
   with open(manifest, 'r') as manifest_json:
       manifest_data = json.load(manifest_json)
-  manifest_json.close()
 
   critical_permission, high_permission, medium_permission, low_permission = ([] for i in range(4))
   
@@ -67,8 +128,12 @@ def permission_checker(retire_scan_file):
   # Risk Analysis Report
   print(f"\nRisk Analysis:\nCritical Risk: {', '.join(critical_permission)}\nHigh Risk: {', '.join(high_permission)}\nMedium Risk: {', '.join(medium_permission)}\nLow Risk: {', '.join(low_permission)}")
 
+  # free memory
+  del manifest_data
+
 # file scanner for malware via VirusTotal
 def vt_scan(upload_file, api_key):
+  vt_crx = upload_file.removeprefix("D:\\Pentest\\crx_checker\\zips")
   # request to upload file
   scan_files = { "file": (vt_crx, open(upload_file, "rb"), "application/x-zip-compressed") }
   headers = {
@@ -116,68 +181,13 @@ key_file = open("VT API Key.txt", "r")
 api_key = key_file.readline()
 key_file.close()
 
-# automated process via guids
-# working vars
-crx_url = ""
-crx_page_url = ""
-chrome_crx_url = "https://clients2.google.com/service/update2/crx?response=redirect&prodversion=136.0.7103.49&acceptformat=crx2,crx3&x=id%3D{extensionid}%26uc"
-chrome_crx_page_url = "https://chromewebstore.google.com/detail/{extensionid}"
-edge_crx_url = "https://edge.microsoft.com/extensionwebstorebase/v1/crx?response=redirect&x=id%3D{extensionid}%26installsource%3Dondemand%26uc"
-edge_crx_page_url = "https://microsoftedge.microsoft.com/addons/detail/{extensionid}"
-crx_dir = "D:\\Pentest\\crx_checker\\zips"
-unzip_crx_dir = "D:\\Pentest\\crx_checker\\unzipped_crxs"
-
 # sanitized user input
 browser_choice = int(input("Select browser [Chrome(0) | Edge(1)]: "))
 crx_guid = input("Enter crx guid: ")
 crx_guid = re.sub(PATTERN_DANGER_CHAR,"",crx_guid)
 
-# guid format checks
-if len(crx_guid)!=32 or str.isalpha(crx_guid) == False:
-    print("please check your guid - ERR: invalid length/digits found")
-    exit()
-
-# choose browser to download crx file for + inititalize appropriate vars
-# format helps put dyanmic values in placeholder{} declared in working vars
-if browser_choice == 0: 
-    crx_url = chrome_crx_url.format(extensionid=crx_guid)
-    crx_page_url = chrome_crx_page_url.format(extensionid=crx_guid)
-elif browser_choice == 1: 
-    crx_url = edge_crx_url.format(extensionid=crx_guid)
-    crx_page_url = edge_crx_page_url.format(extensionid=crx_guid)
-else:
-    print("Please select compatible browser")
-
-print("Checking for extension in webstore....")
-# check if crx is present in webstore
-crx_file_req = requests.get(crx_url, allow_redirects=True)
-if (crx_file_req.status_code == 404):
-    print("No such extenxtion exist on webstore")
-    exit()
-
-# find crx name from webstore page + initialize name for file to be stored on disk
-# extarct page content as text to run regex filter(s)
-crx_page_content = requests.get(crx_page_url,allow_redirects=True).text
-# group(1) only matches the text, leaves out tags 
-match = PATTERN_TAG.search(crx_page_content)
-# eliminate dangerous characters n whitespaces
-safe_match = re.sub(PATTERN_DANGER_CHAR,"-",match.group(1))
-#strftime to provide timestamp
-vt_crx = crx_guid + "_" + safe_match + "_" + time.strftime("%Y%m%d-%H%M%S") + ".crx"
-
-print(f"Extension Found: {safe_match}\nStarting Analysis")
-
-upload_file = os.path.join(crx_dir,vt_crx)
-unzip_crx = vt_crx.replace(".crx","")
-retire_scan_file = os.path.join(unzip_crx_dir, unzip_crx)
-
-# write request content in raw bytes to create crx on disk
-with open(upload_file, 'wb') as file:
-    file.write(crx_file_req.content)
-
-# free up memory
-del crx_page_content
-del crx_file_req
+# call file paths to perform malware, risk and sbom analysis
+upload_file, unzip_crx_file, retire_scan_file = crx_downloader(browser_choice, crx_guid)
 
 # malware scan
 vt_result = vt_scan(upload_file, api_key)["data"]["attributes"]["stats"]
@@ -185,8 +195,8 @@ print(f"Virustotal Scan Summary:\n{vt_result}")
 
 # Extarct crx zip and prepare for retire scan
 #print("Extracting archive for retire scan")
-subprocess.run(f"7z x {upload_file} -o{unzip_crx} -r", shell=True, stdout=subprocess.DEVNULL, stderr=subprocess.STDOUT)
-subprocess.run(["powershell","-c", "Move-Item", f"{unzip_crx}", "-Destination", f"'{retire_scan_file}'"], shell=True, stdout=subprocess.DEVNULL, stderr=subprocess.STDOUT)
+subprocess.run(f"7z x {upload_file} -o{unzip_crx_file} -r", shell=True, stdout=subprocess.DEVNULL, stderr=subprocess.STDOUT)
+subprocess.run(["powershell","-c", "Move-Item", f"{unzip_crx_file}", "-Destination", f"'{retire_scan_file}'"], shell=True, stdout=subprocess.DEVNULL, stderr=subprocess.STDOUT)
 
 # Risk Rating based on permilssions
 permission_checker(retire_scan_file)
