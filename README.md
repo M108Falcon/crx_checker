@@ -1,32 +1,85 @@
-# crx_checker
+# crx-scanner
 CRX malware and risk assessment tool.
 
 ## Why another crx checker?
 The old reliable [crxcavator.io](http://crxcavator.io) is still not working after going dark in Late September/Early October 2024. which leaves no place to check if the web extension you're about to donwload is safe to use or not and what risks are associated with it. Other tools usually cost money. Hence, this script. Tried my own implementation, built upon my crxcavator usage and data/results I collected over a year and half while working on web browser extension safety project for my org. This script aims to provide similar functionality that it used to provide albeit on local machine at this point. 
 
 ## What does it do?
-Uploads the downloaded crx file for the browser extension to be assessed to VT via api. Retrieves assessment results to check for malicious behavior. Extracts the crx contents, performs Risk Assessment for the extension based on [Google's whitepaper](https://storage.googleapis.com/support-kms-prod/H67pelgBrKlKSgvA24ooNwVYYx6emmcuJ0LD) and finally performs SBOM scan via retire to find vulnerabilities in dependencies.
+Downloads the crx file on your computer. Calculates its SHA256 Hash, runs against Virustotal Database for Malware/Exploit analysis. If no results are found via Hash-based searching, then uploads the file to Virustotal for full-scan to be assessed via API. Extracts the crx contents, performs Risk Assessment for the extension based on [Google's whitepaper](https://storage.googleapis.com/support-kms-prod/H67pelgBrKlKSgvA24ooNwVYYx6emmcuJ0LD) and finally performs SBOM scan via retirejs to find vulnerabilities in dependencies.
 
 ## Features
-- Fully automated analysis, just provide guid for the extension.
 - Support for big files (upto 650mb) altho extensions aren't that large but just in case.
+- Fully automated process: Only needs extension guid, and you're good to go.
+- Hash based searching.
 
 ## Prequisites:
 - 7zip (added to PATH)
-- Python 3
-- Nodejs
-- retire
 - VirusTotal API key
-- OPTIONAL: CRX Extractor/Downloader Extension for [google chrome/brave](https://chromewebstore.google.com/search/CRX%20Extractor%2FDownloader)
+- Python (min version: 3.9 PEP 616)
+- Nodejs
+- retirejs
+- OPTIONAL -> CRX Extractor/Downloader Extension for [google chrome/brave](https://chromewebstore.google.com/search/CRX%20Extractor%2FDownloader)
 
 ## Environment setup:
-- Create python virtual environment.`python -m venv <name of your virtualenv>`
-- Install the dependencies via give requirements file. `pip install -r requirements.txt`
+- Create python virtual environment. `python -m venv <path+name of your virtualenv>`
+- Activate your virtualenv.
+```powershell
+Windows:
+& <path to pyenv>\Scripts\Activate.ps1
+```
+```shell
+UNIX:
+source <path to pyenv>/bin/activate
+```
+- Install the dependencies via give requirements file. `pip install -r <path>\requirements.txt`
 - Install retire. `npm install -g retire`
-- Edit code to add locations to relevant dirs in [`crx_downloader function`](crx_checker.py) and VirusTotal API key file before running the tool (use absolute paths).
+- Add zscaler cert to PATH/envar for nodejs
+```powershell
+Windows
+# copy the zscaler cert to AppData
+cp $env:HOMEPATH\crx-scanner\zscaler.pem $env:APPDATA
+# Add to PATH permanent (recommended)
+[System.Environment]::SetEnvironmentVariable("NODE_EXTRA_CA_CERTS", "C:\Users\<username>\AppData\Roaming\zscaler.pem", "User")
+# OR Add to PATH temporary
+$env:NODE_EXTRA_CA_CERTS="C:\Users\<username>\AppData\Roaming\zscaler.pem"
+```
+```bash
+UNIX
+# add cert to path
+mkdir ~/.pki/
+mv .pki/zscaler.pem <location>/zscaler.pem
+
+# Add env to bashrc
+export REQUESTS_CA_BUNDLE=$HOME/.pki/zscaler.pem
+export SSL_CERT_FILE=$HOME/.pki/zscaler.pem
+export NODE_EXTRA_CA_CERTS=$HOME/.pki/zscaler.pem
+```
+- Edit code to add locations to relevant dirs <ins>(default WINDOWS paths followed)</ins> and VirusTotal API key file before running the tool. **(Use absolute paths)**
+    - Line:230 VT API key file.
+    - Line:41 location to downloaded crx file of extension.
+    - Line: 42 location to extract the donwloaded files.
+
+## Debug:
+if you encounter python ssl certify failed error then add zscaler cert explicitly to `certifi` certificate store of your virtual environemnt 
+``` powershell
+Windows
+# ensure virtualenv is active
+cp $env:APPDATA\zscaler.pem $(python -m certifi)
+```
+
+```bash
+UNIX
+# ensure virtualenv is active
+cp $HOME/.pki/zscaler.pem $(python -m certifi)
+
+```
 
 ## Roadmap
 - [x] Full automation i.e just provide URL to extension and rest is done automatically.
-- [ ] Separate download of crx samples
-- [ ] Support for firefox addons.
+- [x] Hash based searching.
+- [ ] Scan history (parially complete).
+- [ ] Reporting formats (partially complete).
+- [ ] Bulk Scan.
+- [ ] Platform Agnostic script.
+- [ ] (OPTIONAL) Support for firefox addons.
 - [ ] (OPTIONAL) Web based GUI.
