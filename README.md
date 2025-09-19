@@ -1,4 +1,4 @@
-# crx-scanner
+# crx_checker
 CRX malware and risk assessment tool.
 
 ## Why another crx checker?
@@ -18,6 +18,7 @@ Downloads the crx file on your computer. Calculates its SHA256 Hash, runs agains
 - Python (min version: 3.9 PEP 616)
 - Nodejs
 - retirejs
+- corporate proxy root certificate (if on corporate machine)
 - OPTIONAL -> CRX Extractor/Downloader Extension for [google chrome/brave](https://chromewebstore.google.com/search/CRX%20Extractor%2FDownloader)
 
 ## Environment setup:
@@ -39,11 +40,11 @@ source <path to pyenv>/bin/activate
     - Line: 42 location to extract the donwloaded files.
 
 ## If you're under corporate-proxy configure this otherwise ignore
-- Add zscaler cert to PATH/envar for nodejs
+- Add corporate-proxy cert to PATH/envar for nodejs
 ```powershell
 Windows
-# copy the zscaler cert to AppData
-cp $env:HOMEPATH\crx-scanner\corporate-proxy-cert.pem $env:APPDATA
+# copy the corporate-proxy cert to AppData
+cp $env:HOMEPATH\crx_checker\corporate-proxy-cert.pem $env:APPDATA
 # Add to PATH permanent (recommended)
 [System.Environment]::SetEnvironmentVariable("NODE_EXTRA_CA_CERTS", "C:\Users\<username>\AppData\Roaming\corporate-proxy-cert.pem", "User")
 # OR Add to PATH temporary
@@ -62,7 +63,7 @@ export NODE_EXTRA_CA_CERTS=$HOME/.pki/corporate-proxy-cert.pem
 ```
 
 ## Debug:
-if you encounter python ssl certify failed error then add zscaler cert explicitly to `certifi` certificate store of your virtual environemnt 
+if you encounter python `ssl-certificate-invalid` error then add corporate-proxy cert explicitly to `certifi` certificate store of your virtual environemnt 
 ``` powershell
 Windows
 # ensure virtualenv is active
