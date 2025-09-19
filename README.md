@@ -33,44 +33,46 @@ source <path to pyenv>/bin/activate
 ```
 - Install the dependencies via give requirements file. `pip install -r <path>\requirements.txt`
 - Install retire. `npm install -g retire`
+- Edit code to add locations to relevant dirs <ins>(default WINDOWS paths followed)</ins> and VirusTotal API key file before running the tool. **(Use absolute paths)**
+    - Line:230 VT API key file.
+    - Line:41 location to downloaded crx file of extension.
+    - Line: 42 location to extract the donwloaded files.
+
+## If you're under corporate-proxy configure this otherwise ignore
 - Add zscaler cert to PATH/envar for nodejs
 ```powershell
 Windows
 # copy the zscaler cert to AppData
-cp $env:HOMEPATH\crx-scanner\zscaler.pem $env:APPDATA
+cp $env:HOMEPATH\crx-scanner\corporate-proxy-cert.pem $env:APPDATA
 # Add to PATH permanent (recommended)
-[System.Environment]::SetEnvironmentVariable("NODE_EXTRA_CA_CERTS", "C:\Users\<username>\AppData\Roaming\zscaler.pem", "User")
+[System.Environment]::SetEnvironmentVariable("NODE_EXTRA_CA_CERTS", "C:\Users\<username>\AppData\Roaming\corporate-proxy-cert.pem", "User")
 # OR Add to PATH temporary
-$env:NODE_EXTRA_CA_CERTS="C:\Users\<username>\AppData\Roaming\zscaler.pem"
+$env:NODE_EXTRA_CA_CERTS="C:\Users\<username>\AppData\Roaming\corporate-proxy-cert.pem"
 ```
 ```bash
 UNIX
 # add cert to path
 mkdir ~/.pki/
-mv .pki/zscaler.pem <location>/zscaler.pem
+mv .pki/corporate-proxy-cert.pem <location>/corporate-proxy-cert.pem
 
 # Add env to bashrc
-export REQUESTS_CA_BUNDLE=$HOME/.pki/zscaler.pem
-export SSL_CERT_FILE=$HOME/.pki/zscaler.pem
-export NODE_EXTRA_CA_CERTS=$HOME/.pki/zscaler.pem
+export REQUESTS_CA_BUNDLE=$HOME/.pki/corporate-proxy-cert.pem
+export SSL_CERT_FILE=$HOME/.pki/corporate-proxy-cert.pem
+export NODE_EXTRA_CA_CERTS=$HOME/.pki/corporate-proxy-cert.pem
 ```
-- Edit code to add locations to relevant dirs <ins>(default WINDOWS paths followed)</ins> and VirusTotal API key file before running the tool. **(Use absolute paths)**
-    - Line:230 VT API key file.
-    - Line:41 location to downloaded crx file of extension.
-    - Line: 42 location to extract the donwloaded files.
 
 ## Debug:
 if you encounter python ssl certify failed error then add zscaler cert explicitly to `certifi` certificate store of your virtual environemnt 
 ``` powershell
 Windows
 # ensure virtualenv is active
-cp $env:APPDATA\zscaler.pem $(python -m certifi)
+cp $env:APPDATA\corporate-proxy-cert.pem $(python -m certifi)
 ```
 
 ```bash
 UNIX
 # ensure virtualenv is active
-cp $HOME/.pki/zscaler.pem $(python -m certifi)
+cp $HOME/.pki/corporate-proxy-cert.pem $(python -m certifi)
 
 ```
 
